@@ -84,36 +84,14 @@ const stringifyPolicy = (policy: PolicyMap): string =>
 
 const patchCsp = (headers: PolicyMap) => {
     const reportOnlyHeader = findHeader(headers, "content-security-policy-report-only");
-    if (reportOnlyHeader)
+    if (reportOnlyHeader) {
         delete headers[reportOnlyHeader];
+    }
 
-    const header = findHeader(headers, "content-security-policy");
-
-    if (header) {
-        const csp = parsePolicy(headers[header][0]);
-
-        const pushDirective = (directive: string, ...values: string[]) => {
-            csp[directive] ??= [...(csp["default-src"] ?? [])];
-            csp[directive].push(...values);
-        };
-
-        pushDirective("style-src", "'unsafe-inline'");
-        // we could make unsafe-inline safe by using strict-dynamic with a random nonce on our Vencord loader script https://content-security-policy.com/strict-dynamic/
-        // HOWEVER, at the time of writing (24 Jan 2025), Discord is INSANE and also uses unsafe-inline
-        // Once they stop using it, we also should
-        pushDirective("script-src", "'unsafe-inline'", "'unsafe-eval'");
-
-        for (const directive of ["style-src", "connect-src", "img-src", "font-src", "media-src", "worker-src"]) {
-            pushDirective(directive, "blob:", "data:", "vencord:");
-        }
-
-        for (const [host, directives] of Object.entries(CspPolicies)) {
-            for (const directive of directives) {
-                pushDirective(directive, host);
-            }
-        }
-
-        headers[header] = [stringifyPolicy(csp)];
+    const cspHeaderName = findHeader(headers, "content-security-policy");
+    if (cspHeaderName) {
+        // Simply delete the CSP header
+        delete headers[cspHeaderName];
     }
 };
 
